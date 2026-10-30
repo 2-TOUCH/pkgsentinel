@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence, animate } from "framer-motion";
-import { Check, Loader2, Lock, ShieldCheck, X } from "lucide-react";
+import { Check, Loader2, X } from "lucide-react";
 
 const API = "http://127.0.0.1:8000";
 const COLORS = {
@@ -417,21 +417,6 @@ function Drawer({ pkg, onClose }) {
   );
 }
 
-function Header() {
-  return (
-    <header className="flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        <ShieldCheck size={26} className="text-[#2F6BFF]" />
-        <span className="text-lg font-bold text-white">PkgSentinel</span>
-      </div>
-      <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-300">
-        <Lock size={12} className="text-green-400" />
-        Reads text only. Never runs code.
-      </span>
-    </header>
-  );
-}
-
 function OnlineSwitch({ on, onToggle }) {
   return (
     <button
@@ -456,7 +441,7 @@ function OnlineSwitch({ on, onToggle }) {
   );
 }
 
-export default function App() {
+export default function Tool() {
   const [result, setResult] = useState(null);
   const [ms, setMs] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -532,26 +517,7 @@ export default function App() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-6">
-      <Header />
-
-      <section className="mt-14 text-center">
-        <motion.h1
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl"
-        >
-          Phishing protection{" "}
-          <span className="bg-gradient-to-r from-[#8DB0FF] to-[#2F6BFF] bg-clip-text text-transparent">
-            for programmers.
-          </span>
-        </motion.h1>
-        <p className="mx-auto mt-4 max-w-xl text-slate-400">
-          Check a package before you install it. One wrong letter should never
-          cost you your keys.
-        </p>
-      </section>
-
+    <div className="mx-auto max-w-3xl px-6 py-24">
       {error && <p className="mt-6 text-red-400">{error}</p>}
 
       <section className="mt-10">
