@@ -1,7 +1,7 @@
-// All the words on the landing page. Edit the TODO lines before you submit.
+// All the words on the landing page.
 
-export const REPO_URL = "https://github.com/"; // TODO: put your public repo link here
-export const CLI_EXAMPLE = "sentinel scan ."; // TODO: put the real CLI command you built
+export const REPO_URL = "https://github.com/SMohammedMaaz/pkgsentinel";
+export const CLI_EXAMPLE = "python -m cli.main scan demo";
 
 export const nav = [
   { label: "Story", href: "#story" },
@@ -45,13 +45,12 @@ export const ways = {
 export const contribute = {
   eyebrow: "Open source",
   heading: "Make it smarter in five minutes.",
-  body: "Detection rules are small, readable files. Add one, add a test, open a pull request.",
+  body: "Detection rules are small, readable files in the rules folder. Add one, add a test, open a pull request.",
   steps: ["Fork", "Add a rule + test", "Tests pass", "Pull request"],
   rule: [
-    ["id", "NET-001"],
-    ["where", "postinstall"],
-    ["match", "(curl|wget).*http"],
-    ["severity", "high"],
-    ["explain", "Install script contacts a remote server"],
+    ["id", "NET_CALL"],
+    ["severity", "50"],
+    ["pattern", "\\bfetch\\(|\\bcurl\\b|https?://"],
+    ["explain", "Makes a network call during install."],
   ],
 };
