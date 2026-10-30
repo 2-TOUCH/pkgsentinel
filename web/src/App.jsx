@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence, animate } from "framer-motion";
-import { Check, Loader2, X } from "lucide-react";
+import { Check, Loader2, Lock, ShieldCheck, X } from "lucide-react";
 
 const API = "http://127.0.0.1:8000";
 const COLORS = {
@@ -8,15 +8,58 @@ const COLORS = {
   WARN: "bg-amber-500/20 text-amber-400 border-amber-500/40",
   ALLOW: "bg-green-500/20 text-green-400 border-green-500/40",
 };
+const ACCENT = {
+  BLOCK: "border-l-red-500",
+  WARN: "border-l-amber-500",
+  ALLOW: "border-l-green-500",
+};
 const STEPS = [
   "Reading package list",
   "Checking names for look-alikes",
   "Reading install scripts (as text only)",
   "Scoring risk",
 ];
+const EXAMPLES = [
+  "npm install expresss",
+  "npm install lodahs",
+  "npm install lodash",
+];
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const reducedMotion = () =>
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// Types phrases one letter at a time, for the input placeholder.
+function useTypewriter(phrases) {
+  const [text, setText] = useState("");
+  useEffect(() => {
+    if (reducedMotion()) {
+      setText(phrases[0]);
+      return;
+    }
+    let p = 0;
+    let c = 0;
+    let deleting = false;
+    let timer;
+    const tick = () => {
+      const full = phrases[p];
+      c += deleting ? -1 : 1;
+      setText(full.slice(0, c));
+      let delay = deleting ? 30 : 70;
+      if (!deleting && c === full.length) {
+        deleting = true;
+        delay = 1400;
+      } else if (deleting && c === 0) {
+        deleting = false;
+        p = (p + 1) % phrases.length;
+        delay = 400;
+      }
+      timer = setTimeout(tick, delay);
+    };
+    timer = setTimeout(tick, 400);
+    return () => clearTimeout(timer);
+  }, [phrases]);
+  return text;
+}
 
 // Finds which letters of a and b do NOT match (longest common subsequence).
 function diffLetters(a, b) {
@@ -98,7 +141,11 @@ function LetterDiff({ typed, likely }) {
 
 function Badge({ verdict, score }) {
   return (
-    <span className={`px-3 py-1 rounded-md border text-sm ${COLORS[verdict]}`}>
+    <span
+      className={`inline-block px-3 py-1 rounded-md border text-sm ${COLORS[verdict]} ${
+        verdict === "BLOCK" ? "shake" : ""
+      }`}
+    >
       {verdict} {score}
     </span>
   );
@@ -115,12 +162,12 @@ function Card({ name, verdict, score, text, likely, index, onClick }) {
       onKeyDown={(e) => clickable && e.key === "Enter" && onClick()}
       role={clickable ? "button" : undefined}
       tabIndex={clickable ? 0 : undefined}
-      className={`rounded-xl p-4 bg-[#121A33] border border-white/10 ${
+      className={`rounded-xl border border-white/10 border-l-4 ${ACCENT[verdict]} bg-[#121A33] p-4 ${
         clickable ? "cursor-pointer hover:border-blue-500/60 transition" : ""
       }`}
     >
       <div className="flex items-center justify-between">
-        <span className="font-mono">{name}</span>
+        <span className="font-mono text-white">{name}</span>
         <Badge verdict={verdict} score={score} />
       </div>
       <p className="text-sm text-slate-400 mt-2">{text}</p>
@@ -325,14 +372,31 @@ function Drawer({ pkg, onClose }) {
   );
 }
 
+function Header() {
+  return (
+    <header className="flex items-center justify-between">
+      <div className="flex items-center gap-2">
+        <ShieldCheck size={26} className="text-[#2F6BFF]" />
+        <span className="text-lg font-bold text-white">PkgSentinel</span>
+      </div>
+      <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-300">
+        <Lock size={12} className="text-green-400" />
+        Reads text only. Never runs code.
+      </span>
+    </header>
+  );
+}
+
 export default function App() {
   const [result, setResult] = useState(null);
+  const [ms, setMs] = useState(null);
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(-1);
   const [command, setCommand] = useState("");
   const [checked, setChecked] = useState([]);
   const [selected, setSelected] = useState(null);
   const [error, setError] = useState("");
+  const typed = useTypewriter(EXAMPLES);
 
   useEffect(() => {
     const onKey = (e) => e.key === "Escape" && setSelected(null);
@@ -359,87 +423,148 @@ export default function App() {
   async function runScan() {
     setLoading(true);
     setResult(null);
-    const request = post("/api/scan", { path: "demo" });
+    const request = (async () => {
+      const t0 = performance.now();
+      const data = await post("/api/scan", { path: "demo" });
+      return { data, ms: Math.round(performance.now() - t0) };
+    })();
     for (let i = 0; i < STEPS.length; i++) {
       setStep(i);
       await sleep(350);
     }
     setStep(STEPS.length);
-    const data = await request;
-    if (data) setResult(data);
+    const done = await request;
+    if (done.data) {
+      setResult(done.data);
+      setMs(done.ms);
+    }
     setLoading(false);
   }
 
-  async function checkCommand() {
-    if (!command.trim()) return;
-    const data = await post("/api/check", { command });
+  async function checkCommand(cmd = command) {
+    if (!cmd.trim()) return;
+    const data = await post("/api/check", { command: cmd });
     if (data) setChecked(data.packages);
   }
 
   return (
-    <div className="max-w-3xl mx-auto p-8">
-      <h1 className="text-3xl font-bold">PkgSentinel</h1>
-      <p className="text-blue-300 mb-6">Phishing protection for programmers.</p>
+    <div className="mx-auto max-w-3xl px-6 py-6">
+      <Header />
 
-      {error && <p className="mb-4 text-red-400">{error}</p>}
-
-      <h2 className="text-lg font-semibold mb-2">Paste an install command</h2>
-      <div className="flex gap-3">
-        <input
-          value={command}
-          onChange={(e) => setCommand(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && checkCommand()}
-          placeholder="npm install expresss"
-          className="flex-1 rounded-lg px-4 py-2 font-mono bg-[#121A33] border border-white/10 outline-none focus:border-blue-500"
-        />
-        <button
-          onClick={checkCommand}
-          className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 transition"
+      <section className="mt-14 text-center">
+        <motion.h1
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl"
         >
-          Check
-        </button>
-      </div>
-      <div className="mt-4 space-y-3">
-        {checked.map((p, i) => (
-          <Card
-            key={p.name}
-            index={i}
-            name={p.name}
-            verdict={p.verdict}
-            score={p.score}
-            likely={p.likely}
-            text={p.reasons.length ? `${p.reasons.join(". ")}.` : "No risks found."}
-          />
-        ))}
-      </div>
+          Phishing protection{" "}
+          <span className="bg-gradient-to-r from-[#8DB0FF] to-[#2F6BFF] bg-clip-text text-transparent">
+            for programmers.
+          </span>
+        </motion.h1>
+        <p className="mx-auto mt-4 max-w-xl text-slate-400">
+          Check a package before you install it. One wrong letter should never
+          cost you your keys.
+        </p>
+      </section>
 
-      <h2 className="text-lg font-semibold mt-10 mb-2">Scan a project</h2>
-      <button
-        onClick={runScan}
-        disabled={loading}
-        className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 transition disabled:opacity-60"
-      >
-        {loading ? "Scanning..." : "Scan demo project"}
-      </button>
-      {step >= 0 && <Steps step={step} />}
-      {result && <Tiles result={result} />}
-      {result && (
-        <p className="mt-4 text-xs text-slate-500">Click a card to see why.</p>
-      )}
-      <div className="mt-2 space-y-3">
-        {result?.packages.map((p, i) => (
-          <Card
-            key={p.name}
-            index={i}
-            name={p.name}
-            verdict={p.verdict}
-            score={p.score}
-            likely={p.name_risk.likely}
-            text={p.summary}
-            onClick={() => setSelected(p)}
+      {error && <p className="mt-6 text-red-400">{error}</p>}
+
+      <section className="mt-10">
+        <div className="flex gap-3">
+          <input
+            value={command}
+            onChange={(e) => setCommand(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && checkCommand()}
+            placeholder={typed}
+            aria-label="Paste an install command"
+            className="flex-1 rounded-xl border border-white/10 bg-[#121A33] px-4 py-3 font-mono outline-none focus:border-blue-500"
           />
-        ))}
-      </div>
+          <button
+            onClick={() => checkCommand()}
+            className="rounded-xl bg-blue-600 px-6 py-3 font-medium transition hover:bg-blue-500"
+          >
+            Check
+          </button>
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+          Try:
+          {EXAMPLES.map((ex) => (
+            <button
+              key={ex}
+              onClick={() => {
+                setCommand(ex);
+                checkCommand(ex);
+              }}
+              className="rounded-full border border-white/10 bg-white/5 px-3 py-1 font-mono text-slate-300 transition hover:border-blue-500/60"
+            >
+              {ex}
+            </button>
+          ))}
+        </div>
+        <div className="mt-4 space-y-3">
+          {checked.map((p, i) => (
+            <Card
+              key={p.name}
+              index={i}
+              name={p.name}
+              verdict={p.verdict}
+              score={p.score}
+              likely={p.likely}
+              text={p.reasons.length ? `${p.reasons.join(". ")}.` : "No risks found."}
+            />
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-14">
+        <div className="flex items-end justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-semibold text-white">Scan a project</h2>
+            <p className="text-sm text-slate-400">
+              Reads the dependency list and every install script, as text.
+            </p>
+          </div>
+          <button
+            onClick={runScan}
+            disabled={loading}
+            className="shrink-0 rounded-xl bg-blue-600 px-5 py-2.5 font-medium transition hover:bg-blue-500 disabled:opacity-60"
+          >
+            {loading ? "Scanning..." : "Scan demo project"}
+          </button>
+        </div>
+
+        {step < 0 && (
+          <div className="mt-4 rounded-xl border border-dashed border-white/15 p-6 text-center text-sm text-slate-500">
+            No scan yet. Click "Scan demo project" to see the results here.
+          </div>
+        )}
+        {step >= 0 && <Steps step={step} />}
+        {result && <Tiles result={result} />}
+        {result && (
+          <p className="mt-4 text-xs text-slate-500">
+            Analysis took {ms} ms. Nothing was run. Click a card to see why.
+          </p>
+        )}
+        <div className="mt-2 space-y-3">
+          {result?.packages.map((p, i) => (
+            <Card
+              key={p.name}
+              index={i}
+              name={p.name}
+              verdict={p.verdict}
+              score={p.score}
+              likely={p.name_risk.likely}
+              text={p.summary}
+              onClick={() => setSelected(p)}
+            />
+          ))}
+        </div>
+      </section>
+
+      <footer className="mt-16 pb-6 text-center text-xs text-slate-600">
+        Static analysis is one layer of defence, not a guarantee.
+      </footer>
 
       <AnimatePresence>
         {selected && (
