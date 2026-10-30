@@ -1,5 +1,5 @@
 # Famous npm packages. A fake name is usually one typo away from one of these.
-# Starter list: we will grow it to the top 1,000 later.
+# Starter list (~150). The plan is to grow it to the top 1,000 from public registry data.
 POPULAR = {
     "express", "lodash", "react", "react-dom", "axios", "chalk", "commander",
     "debug", "moment", "request", "async", "underscore", "vue", "webpack",
@@ -8,4 +8,22 @@ POPULAR = {
     "glob", "minimist", "semver", "rimraf", "fs-extra", "inquirer", "colors",
     "tslib", "classnames", "redux", "rxjs", "socket.io", "passport", "nodemon",
     "babel-core", "cross-env", "mkdirp", "ws", "zod", "vite", "tailwindcss",
+    "color", "yarn", "chai", "core-js", "prop-types", "react-router",
+    "react-redux", "react-native", "angular", "svelte", "nuxt", "gatsby",
+    "electron", "puppeteer", "playwright", "cypress", "sinon", "supertest",
+    "nock", "cheerio", "jsdom", "marked", "handlebars", "ejs", "pug", "mustache",
+    "cookie-parser", "express-session", "helmet", "morgan", "multer", "compression",
+    "jsonwebtoken", "bcrypt", "bcryptjs", "validator", "joi", "yup", "ajv",
+    "dayjs", "date-fns", "luxon", "ramda", "immutable", "immer", "mobx",
+    "graphql", "apollo-server", "prisma", "sequelize", "typeorm", "knex", "mysql",
+    "mysql2", "pg", "redis", "ioredis", "mongodb", "sqlite3", "aws-sdk",
+    "firebase", "stripe", "twilio", "nodemailer", "winston", "pino", "bunyan",
+    "ora", "execa", "shelljs", "chokidar", "globby", "del", "cpx", "concurrently",
+    "husky", "lint-staged", "rollup", "parcel", "esbuild", "babel-loader",
+    "css-loader", "style-loader", "sass", "less", "postcss", "autoprefixer",
+    "bootstrap", "tailwind", "styled-components", "emotion", "framer-motion",
+    "lucide-react", "recharts", "d3", "three", "chart.js", "leaflet",
+    "node-fetch", "got", "superagent", "form-data", "qs", "ms", "http-errors",
+    "path-to-regexp", "cross-spawn", "which", "escape-string-regexp", "string-width",
+    "strip-ansi", "ansi-styles", "supports-color", "picocolors", "kleur",
 }
