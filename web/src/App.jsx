@@ -15,6 +15,8 @@ const STEPS = [
   "Scoring risk",
 ];
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const reducedMotion = () =>
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 // Finds which letters of a and b do NOT match (longest common subsequence).
 function diffLetters(a, b) {
@@ -153,12 +155,52 @@ function Steps({ step }) {
   );
 }
 
+function Tile({ label, value, color, index }) {
+  const [shown, setShown] = useState(0);
+  useEffect(() => {
+    const controls = animate(0, value, {
+      duration: reducedMotion() ? 0 : 0.8,
+      ease: "easeOut",
+      onUpdate: (v) => setShown(Math.round(v)),
+    });
+    return () => controls.stop();
+  }, [value]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.07 }}
+      className="rounded-xl border border-white/10 bg-[#121A33] p-4"
+    >
+      <div className={`text-3xl font-bold ${color}`}>{shown}</div>
+      <div className="mt-1 text-xs tracking-wide text-slate-400">{label}</div>
+    </motion.div>
+  );
+}
+
+function Tiles({ result }) {
+  const c = result.counts;
+  const items = [
+    { label: "SCANNED", value: result.packages.length, color: "text-white" },
+    { label: "BLOCKED", value: c.BLOCK, color: "text-red-400" },
+    { label: "WARNED", value: c.WARN, color: "text-amber-400" },
+    { label: "ALLOWED", value: c.ALLOW, color: "text-green-400" },
+  ];
+  return (
+    <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      {items.map((t, i) => (
+        <Tile key={t.label} index={i} {...t} />
+      ))}
+    </div>
+  );
+}
+
 function Gauge({ score, verdict }) {
   const [shown, setShown] = useState(0);
   useEffect(() => {
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const controls = animate(0, score, {
-      duration: reduce ? 0 : 1,
+      duration: reducedMotion() ? 0 : 1,
       ease: "easeOut",
       onUpdate: (v) => setShown(Math.round(v)),
     });
@@ -380,6 +422,7 @@ export default function App() {
         {loading ? "Scanning..." : "Scan demo project"}
       </button>
       {step >= 0 && <Steps step={step} />}
+      {result && <Tiles result={result} />}
       {result && (
         <p className="mt-4 text-xs text-slate-500">Click a card to see why.</p>
       )}
