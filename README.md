@@ -100,7 +100,7 @@ python -m pytest
 | `GET /api/health` | Is the API running? |
 | `GET /api/rules` | List the detection rules. |
 | `POST /api/scan` | Scan a project, for example `{"path": "demo"}`. |
-| `POST /api/check` | Check names in a pasted command, for example `{"command": "npm install expresss"}`. |
+| `POST /api/check` | Check names in a pasted command, for example `{"command": "npm install expresss"}`. Add `"online": true` to also ask npm if each name exists. |
 | `GET /api/scans` | Scan history. |
 | `GET /api/scans/{id}` | One past scan. |
 
@@ -129,6 +129,7 @@ Good first issues: add a new YAML rule, grow the list of popular package names, 
 - This is **one layer of defence, not a guarantee**. Static checks can miss well-hidden code. We flag obfuscation itself, but a determined attacker may get past text rules.
 - The popular-names list is a bundled starter list of about 150 names. It is designed to grow.
 - Right now it supports npm projects only.
+- An optional **online mode** (off by default) asks npm's public download-count API whether a name exists and how many downloads it had last week. It sends package names only, never code, and PkgSentinel works fully offline without it. Existing on npm does not mean a package is safe.
 - It checks names and install scripts, not the whole package code or known vulnerabilities. It is meant to sit next to tools like `npm audit`, not replace them.
 - A name that looks like a typo can be a legitimate package, so the scores are weighted and medium scores give a WARN.
 

@@ -8,18 +8,21 @@ const COLORS = {
   WARN: "bg-amber-500/20 text-amber-400 border-amber-500/40",
   ALLOW: "bg-green-500/20 text-green-400 border-green-500/40",
   UNVERIFIED: "bg-slate-500/20 text-slate-300 border-slate-500/40",
+  NOT_FOUND: "bg-violet-500/20 text-violet-300 border-violet-500/40",
 };
 const ACCENT = {
   BLOCK: "border-l-red-500",
   WARN: "border-l-amber-500",
   ALLOW: "border-l-green-500",
   UNVERIFIED: "border-l-slate-500",
+  NOT_FOUND: "border-l-violet-500",
 };
 const GAUGE_COLORS = {
   BLOCK: "#EF4444",
   WARN: "#F59E0B",
   ALLOW: "#22C55E",
   UNVERIFIED: "#94A3B8",
+  NOT_FOUND: "#A78BFA",
 };
 const STEPS = [
   "Reading package list",
@@ -39,10 +42,23 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const reducedMotion = () =>
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-// ALLOW only means "no warning signs". If the name is not a known popular
-// package, we show it as UNVERIFIED instead of a green all-clear.
-function displayState(verdict, known) {
-  return verdict === "ALLOW" && known === false ? "UNVERIFIED" : verdict;
+// ALLOW only means "no warning signs". We only show green when the name is a
+// known popular package. A name npm has never heard of gets its own state.
+function displayState(verdict, known, registry) {
+  if (verdict !== "ALLOW") return verdict;
+  if (registry && registry.checked && registry.exists === false) {
+    return "NOT_FOUND";
+  }
+  return known === false ? "UNVERIFIED" : "ALLOW";
+}
+
+function registryLine(registry) {
+  if (!registry) return null;
+  if (!registry.checked) {
+    return "Could not reach npm, so this is the offline result only.";
+  }
+  if (registry.exists === false) return "No package with this name exists on npm.";
+  return `On npm: ${registry.weekly_downloads.toLocaleString()} downloads last week.`;
 }
 
 // Types phrases one letter at a time, for the input placeholder.
@@ -157,18 +173,24 @@ function LetterDiff({ typed, likely }) {
 }
 
 function Badge({ state, score }) {
+  const label =
+    state === "UNVERIFIED"
+      ? "UNVERIFIED"
+      : state === "NOT_FOUND"
+        ? "NOT ON NPM"
+        : `${state} ${score}`;
   return (
     <span
       className={`inline-block px-3 py-1 rounded-md border text-sm ${COLORS[state]} ${
         state === "BLOCK" ? "shake" : ""
       }`}
     >
-      {state === "UNVERIFIED" ? "UNVERIFIED" : `${state} ${score}`}
+      {label}
     </span>
   );
 }
 
-function Card({ name, state, score, text, likely, index, onClick }) {
+function Card({ name, state, score, text, extra, likely, index, onClick }) {
   const clickable = Boolean(onClick);
   return (
     <motion.div
@@ -189,6 +211,7 @@ function Card({ name, state, score, text, likely, index, onClick }) {
       </div>
       <p className="text-sm text-slate-400 mt-2">{text}</p>
       {likely && <LetterDiff typed={name} likely={likely} />}
+      {extra && <p className="mt-2 text-xs text-[#8DB0FF]">{extra}</p>}
     </motion.div>
   );
 }
@@ -409,6 +432,30 @@ function Header() {
   );
 }
 
+function OnlineSwitch({ on, onToggle }) {
+  return (
+    <button
+      role="switch"
+      aria-checked={on}
+      onClick={onToggle}
+      className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 py-1 pl-1 pr-3 text-xs text-slate-300 transition hover:border-blue-500/60"
+    >
+      <span
+        className={`flex h-5 w-9 items-center rounded-full px-0.5 transition ${
+          on ? "bg-blue-600" : "bg-slate-600"
+        }`}
+      >
+        <span
+          className={`h-4 w-4 rounded-full bg-white transition-transform ${
+            on ? "translate-x-4" : ""
+          }`}
+        />
+      </span>
+      Verify on npm (online)
+    </button>
+  );
+}
+
 export default function App() {
   const [result, setResult] = useState(null);
   const [ms, setMs] = useState(null);
@@ -416,6 +463,7 @@ export default function App() {
   const [step, setStep] = useState(-1);
   const [command, setCommand] = useState("");
   const [checked, setChecked] = useState([]);
+  const [online, setOnline] = useState(false);
   const [selected, setSelected] = useState(null);
   const [error, setError] = useState("");
   const typed = useTypewriter(EXAMPLES);
@@ -465,13 +513,15 @@ export default function App() {
 
   async function checkCommand(cmd = command) {
     if (!cmd.trim()) return;
-    const data = await post("/api/check", { command: cmd });
+    const data = await post("/api/check", { command: cmd, online });
     if (data) setChecked(data.packages);
   }
 
   function checkText(p, state) {
     if (p.reasons.length) return `${p.reasons.join(". ")}.`;
-    return state === "UNVERIFIED" ? UNVERIFIED_TEXT : KNOWN_TEXT;
+    if (state === "NOT_FOUND") return "Nothing to scan: this package does not exist on npm.";
+    if (state === "UNVERIFIED") return UNVERIFIED_TEXT;
+    return KNOWN_TEXT;
   }
 
   function scanText(p, state) {
@@ -521,24 +571,32 @@ export default function App() {
             Check
           </button>
         </div>
-        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-          Try:
-          {EXAMPLES.map((ex) => (
-            <button
-              key={ex}
-              onClick={() => {
-                setCommand(ex);
-                checkCommand(ex);
-              }}
-              className="rounded-full border border-white/10 bg-white/5 px-3 py-1 font-mono text-slate-300 transition hover:border-blue-500/60"
-            >
-              {ex}
-            </button>
-          ))}
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+            Try:
+            {EXAMPLES.map((ex) => (
+              <button
+                key={ex}
+                onClick={() => {
+                  setCommand(ex);
+                  checkCommand(ex);
+                }}
+                className="rounded-full border border-white/10 bg-white/5 px-3 py-1 font-mono text-slate-300 transition hover:border-blue-500/60"
+              >
+                {ex}
+              </button>
+            ))}
+          </div>
+          <OnlineSwitch on={online} onToggle={() => setOnline(!online)} />
         </div>
+        <p className="mt-2 text-right text-xs text-slate-600">
+          {online
+            ? "Online: sends only package names to npm's public download-count API."
+            : "Offline: works without internet, using our built-in list of popular packages."}
+        </p>
         <div className="mt-4 space-y-3">
           {checked.map((p, i) => {
-            const state = displayState(p.verdict, p.known);
+            const state = displayState(p.verdict, p.known, p.registry);
             return (
               <Card
                 key={p.name}
@@ -548,6 +606,7 @@ export default function App() {
                 score={p.score}
                 likely={p.likely}
                 text={checkText(p, state)}
+                extra={registryLine(p.registry)}
               />
             );
           })}
