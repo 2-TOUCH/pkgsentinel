@@ -16,6 +16,84 @@ const STEPS = [
 ];
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// Finds which letters of a and b do NOT match (longest common subsequence).
+function diffLetters(a, b) {
+  const n = a.length;
+  const m = b.length;
+  const dp = Array.from({ length: n + 1 }, () => Array(m + 1).fill(0));
+  for (let i = 1; i <= n; i++) {
+    for (let j = 1; j <= m; j++) {
+      dp[i][j] =
+        a[i - 1] === b[j - 1]
+          ? dp[i - 1][j - 1] + 1
+          : Math.max(dp[i - 1][j], dp[i][j - 1]);
+    }
+  }
+  const aBad = Array(n).fill(false);
+  const bBad = Array(m).fill(false);
+  let i = n;
+  let j = m;
+  while (i > 0 && j > 0) {
+    if (a[i - 1] === b[j - 1]) {
+      i--;
+      j--;
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      aBad[i - 1] = true;
+      i--;
+    } else {
+      bBad[j - 1] = true;
+      j--;
+    }
+  }
+  while (i > 0) aBad[--i] = true;
+  while (j > 0) bBad[--j] = true;
+  return { aBad, bBad };
+}
+
+function LetterDiff({ typed, likely }) {
+  const { aBad, bBad } = diffLetters(typed, likely);
+  return (
+    <div className="mt-3 space-y-1 font-mono text-sm">
+      <div className="flex items-center">
+        <span className="w-28 shrink-0 font-sans text-xs text-slate-500">
+          You typed
+        </span>
+        <span>
+          {typed.split("").map((ch, i) => (
+            <span
+              key={i}
+              className={
+                aBad[i] ? "rounded bg-red-500/25 px-0.5 text-red-400" : "text-slate-300"
+              }
+            >
+              {ch}
+            </span>
+          ))}
+        </span>
+      </div>
+      <div className="flex items-center">
+        <span className="w-28 shrink-0 font-sans text-xs text-slate-500">
+          Did you mean
+        </span>
+        <span>
+          {likely.split("").map((ch, i) => (
+            <span
+              key={i}
+              className={
+                bBad[i]
+                  ? "rounded bg-green-500/25 px-0.5 text-green-400"
+                  : "text-slate-300"
+              }
+            >
+              {ch}
+            </span>
+          ))}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 function Badge({ verdict, score }) {
   return (
     <span className={`px-3 py-1 rounded-md border text-sm ${COLORS[verdict]}`}>
@@ -24,7 +102,7 @@ function Badge({ verdict, score }) {
   );
 }
 
-function Card({ name, verdict, score, text, index, onClick }) {
+function Card({ name, verdict, score, text, likely, index, onClick }) {
   const clickable = Boolean(onClick);
   return (
     <motion.div
@@ -44,6 +122,7 @@ function Card({ name, verdict, score, text, index, onClick }) {
         <Badge verdict={verdict} score={score} />
       </div>
       <p className="text-sm text-slate-400 mt-2">{text}</p>
+      {likely && <LetterDiff typed={name} likely={likely} />}
     </motion.div>
   );
 }
@@ -158,9 +237,7 @@ function Drawer({ pkg, onClose }) {
           <div className="rounded-lg border border-white/10 bg-[#121A33] p-3 text-sm text-slate-300">
             {pkg.name_risk.reasons.join(". ")}.
             {pkg.name_risk.likely && (
-              <p className="mt-2 text-green-400">
-                Did you mean '{pkg.name_risk.likely}'?
-              </p>
+              <LetterDiff typed={pkg.name} likely={pkg.name_risk.likely} />
             )}
           </div>
         ) : (
@@ -288,11 +365,8 @@ export default function App() {
             name={p.name}
             verdict={p.verdict}
             score={p.score}
-            text={
-              p.reasons.length
-                ? p.reasons.join(". ") + (p.likely ? `. Did you mean '${p.likely}'?` : "")
-                : "No risks found."
-            }
+            likely={p.likely}
+            text={p.reasons.length ? `${p.reasons.join(". ")}.` : "No risks found."}
           />
         ))}
       </div>
@@ -317,6 +391,7 @@ export default function App() {
             name={p.name}
             verdict={p.verdict}
             score={p.score}
+            likely={p.name_risk.likely}
             text={p.summary}
             onClick={() => setSelected(p)}
           />
