@@ -41,7 +41,7 @@ def check_name(name):
     if best_d == 1 and len(best) >= 4:
         return {"score": 85, "likely": best,
                 "reasons": [f"only 1 letter away from the popular package '{best}'"]}
-    if best_d == 2 and len(best) >= 8:
+    if best_d == 2 and len(best) >= 7:
         return {"score": 55, "likely": best,
                 "reasons": [f"only 2 letters away from the popular package '{best}'"]}
 
