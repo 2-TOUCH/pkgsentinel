@@ -14,7 +14,7 @@ def check_name(name):
     """Return how risky a package NAME is (0-100) and what it was
     probably meant to be. Only compares text, nothing is downloaded."""
     n = normalize(name)
-    if n in POPULAR:
+    if n in POPULAR or name.lower() in POPULAR:
         return {"score": 0, "likely": None, "reasons": []}
 
     # Trick 1: look-alike characters (rn vs m, 1 vs l, 0 vs o)
