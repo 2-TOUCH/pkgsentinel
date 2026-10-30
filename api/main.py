@@ -56,7 +56,7 @@ def check(req: CheckRequest):
         r = check_name(name)
         packages.append({
             "name": name, "score": r["score"], "verdict": verdict(r["score"]),
-            "likely": r["likely"], "reasons": r["reasons"],
+                     "likely": r["likely"], "reasons": r["reasons"], "known": r["known"],
         })
     return {"command": req.command, "packages": packages}
 

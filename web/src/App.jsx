@@ -7,11 +7,19 @@ const COLORS = {
   BLOCK: "bg-red-500/20 text-red-400 border-red-500/40",
   WARN: "bg-amber-500/20 text-amber-400 border-amber-500/40",
   ALLOW: "bg-green-500/20 text-green-400 border-green-500/40",
+  UNVERIFIED: "bg-slate-500/20 text-slate-300 border-slate-500/40",
 };
 const ACCENT = {
   BLOCK: "border-l-red-500",
   WARN: "border-l-amber-500",
   ALLOW: "border-l-green-500",
+  UNVERIFIED: "border-l-slate-500",
+};
+const GAUGE_COLORS = {
+  BLOCK: "#EF4444",
+  WARN: "#F59E0B",
+  ALLOW: "#22C55E",
+  UNVERIFIED: "#94A3B8",
 };
 const STEPS = [
   "Reading package list",
@@ -24,9 +32,18 @@ const EXAMPLES = [
   "npm install lodahs",
   "npm install lodash",
 ];
+const UNVERIFIED_TEXT =
+  "Not in our list of popular packages, so we can't vouch for it. No look-alike name or risky install script found.";
+const KNOWN_TEXT = "Known popular package name. No risks found.";
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const reducedMotion = () =>
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// ALLOW only means "no warning signs". If the name is not a known popular
+// package, we show it as UNVERIFIED instead of a green all-clear.
+function displayState(verdict, known) {
+  return verdict === "ALLOW" && known === false ? "UNVERIFIED" : verdict;
+}
 
 // Types phrases one letter at a time, for the input placeholder.
 function useTypewriter(phrases) {
@@ -139,19 +156,19 @@ function LetterDiff({ typed, likely }) {
   );
 }
 
-function Badge({ verdict, score }) {
+function Badge({ state, score }) {
   return (
     <span
-      className={`inline-block px-3 py-1 rounded-md border text-sm ${COLORS[verdict]} ${
-        verdict === "BLOCK" ? "shake" : ""
+      className={`inline-block px-3 py-1 rounded-md border text-sm ${COLORS[state]} ${
+        state === "BLOCK" ? "shake" : ""
       }`}
     >
-      {verdict} {score}
+      {state === "UNVERIFIED" ? "UNVERIFIED" : `${state} ${score}`}
     </span>
   );
 }
 
-function Card({ name, verdict, score, text, likely, index, onClick }) {
+function Card({ name, state, score, text, likely, index, onClick }) {
   const clickable = Boolean(onClick);
   return (
     <motion.div
@@ -162,13 +179,13 @@ function Card({ name, verdict, score, text, likely, index, onClick }) {
       onKeyDown={(e) => clickable && e.key === "Enter" && onClick()}
       role={clickable ? "button" : undefined}
       tabIndex={clickable ? 0 : undefined}
-      className={`rounded-xl border border-white/10 border-l-4 ${ACCENT[verdict]} bg-[#121A33] p-4 ${
+      className={`rounded-xl border border-white/10 border-l-4 ${ACCENT[state]} bg-[#121A33] p-4 ${
         clickable ? "cursor-pointer hover:border-blue-500/60 transition" : ""
       }`}
     >
       <div className="flex items-center justify-between">
         <span className="font-mono text-white">{name}</span>
-        <Badge verdict={verdict} score={score} />
+        <Badge state={state} score={score} />
       </div>
       <p className="text-sm text-slate-400 mt-2">{text}</p>
       {likely && <LetterDiff typed={name} likely={likely} />}
@@ -243,7 +260,7 @@ function Tiles({ result }) {
   );
 }
 
-function Gauge({ score, verdict }) {
+function Gauge({ score, state }) {
   const [shown, setShown] = useState(0);
   useEffect(() => {
     const controls = animate(0, score, {
@@ -256,7 +273,7 @@ function Gauge({ score, verdict }) {
 
   const R = 52;
   const C = 2 * Math.PI * R;
-  const color = { BLOCK: "#EF4444", WARN: "#F59E0B", ALLOW: "#22C55E" }[verdict];
+  const color = GAUGE_COLORS[state];
 
   return (
     <div className="relative mx-auto mt-6 h-36 w-36">
@@ -277,7 +294,7 @@ function Gauge({ score, verdict }) {
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span className="text-4xl font-bold text-white">{shown}</span>
         <span className="text-xs font-semibold tracking-widest" style={{ color }}>
-          {verdict}
+          {state}
         </span>
       </div>
     </div>
@@ -285,6 +302,7 @@ function Gauge({ score, verdict }) {
 }
 
 function Drawer({ pkg, onClose }) {
+  const state = displayState(pkg.verdict, pkg.name_risk.known);
   const findings = [...pkg.script_risk.findings].sort(
     (a, b) => b.severity - a.severity
   );
@@ -317,7 +335,7 @@ function Drawer({ pkg, onClose }) {
             <X size={20} />
           </button>
         </div>
-        <Gauge score={pkg.score} verdict={pkg.verdict} />
+        <Gauge score={pkg.score} state={state} />
 
         <h4 className="mt-8 mb-2 text-sm font-semibold text-[#8DB0FF]">
           NAME CHECK
@@ -330,7 +348,11 @@ function Drawer({ pkg, onClose }) {
             )}
           </div>
         ) : (
-          <p className="text-sm text-slate-400">The name looks fine.</p>
+          <p className="text-sm text-slate-400">
+            {pkg.name_risk.known === false
+              ? "Not in our list of popular packages, so we can't vouch for this name."
+              : "Known popular package name."}
+          </p>
         )}
 
         <h4 className="mt-8 mb-2 text-sm font-semibold text-[#8DB0FF]">
@@ -447,6 +469,18 @@ export default function App() {
     if (data) setChecked(data.packages);
   }
 
+  function checkText(p, state) {
+    if (p.reasons.length) return `${p.reasons.join(". ")}.`;
+    return state === "UNVERIFIED" ? UNVERIFIED_TEXT : KNOWN_TEXT;
+  }
+
+  function scanText(p, state) {
+    if (state === "UNVERIFIED" && p.summary === "No risks found.") {
+      return UNVERIFIED_TEXT;
+    }
+    return p.summary;
+  }
+
   return (
     <div className="mx-auto max-w-3xl px-6 py-6">
       <Header />
@@ -503,17 +537,20 @@ export default function App() {
           ))}
         </div>
         <div className="mt-4 space-y-3">
-          {checked.map((p, i) => (
-            <Card
-              key={p.name}
-              index={i}
-              name={p.name}
-              verdict={p.verdict}
-              score={p.score}
-              likely={p.likely}
-              text={p.reasons.length ? `${p.reasons.join(". ")}.` : "No risks found."}
-            />
-          ))}
+          {checked.map((p, i) => {
+            const state = displayState(p.verdict, p.known);
+            return (
+              <Card
+                key={p.name}
+                index={i}
+                name={p.name}
+                state={state}
+                score={p.score}
+                likely={p.likely}
+                text={checkText(p, state)}
+              />
+            );
+          })}
         </div>
       </section>
 
@@ -547,23 +584,27 @@ export default function App() {
           </p>
         )}
         <div className="mt-2 space-y-3">
-          {result?.packages.map((p, i) => (
-            <Card
-              key={p.name}
-              index={i}
-              name={p.name}
-              verdict={p.verdict}
-              score={p.score}
-              likely={p.name_risk.likely}
-              text={p.summary}
-              onClick={() => setSelected(p)}
-            />
-          ))}
+          {result?.packages.map((p, i) => {
+            const state = displayState(p.verdict, p.name_risk.known);
+            return (
+              <Card
+                key={p.name}
+                index={i}
+                name={p.name}
+                state={state}
+                score={p.score}
+                likely={p.name_risk.likely}
+                text={scanText(p, state)}
+                onClick={() => setSelected(p)}
+              />
+            );
+          })}
         </div>
       </section>
 
       <footer className="mt-16 pb-6 text-center text-xs text-slate-600">
-        Static analysis is one layer of defence, not a guarantee.
+        Static analysis is one layer of defence, not a guarantee. ALLOW means
+        no warning signs, not "safe".
       </footer>
 
       <AnimatePresence>
