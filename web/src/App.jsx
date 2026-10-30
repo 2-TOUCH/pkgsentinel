@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { Check, Loader2 } from "lucide-react";
 
 const API = "http://127.0.0.1:8000";
 const COLORS = {
@@ -7,6 +8,13 @@ const COLORS = {
   WARN: "bg-amber-500/20 text-amber-400 border-amber-500/40",
   ALLOW: "bg-green-500/20 text-green-400 border-green-500/40",
 };
+const STEPS = [
+  "Reading package list",
+  "Checking names for look-alikes",
+  "Reading install scripts (as text only)",
+  "Scoring risk",
+];
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 function Card({ name, verdict, score, text, index }) {
   return (
@@ -27,9 +35,36 @@ function Card({ name, verdict, score, text, index }) {
   );
 }
 
+function Steps({ step }) {
+  return (
+    <div className="mt-4 rounded-xl p-4 bg-[#121A33] border border-white/10 space-y-2">
+      {STEPS.map((label, i) => {
+        if (i > step) return null;
+        const done = i < step;
+        return (
+          <motion.div
+            key={label}
+            initial={{ opacity: 0, x: -8 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="flex items-center gap-3 text-sm text-slate-300"
+          >
+            {done ? (
+              <Check size={16} className="text-green-400" />
+            ) : (
+              <Loader2 size={16} className="animate-spin text-[#8DB0FF]" />
+            )}
+            {label}
+          </motion.div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function App() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [step, setStep] = useState(-1);
   const [command, setCommand] = useState("");
   const [checked, setChecked] = useState([]);
   const [error, setError] = useState("");
@@ -52,7 +87,14 @@ export default function App() {
 
   async function runScan() {
     setLoading(true);
-    const data = await post("/api/scan", { path: "demo" });
+    setResult(null);
+    const request = post("/api/scan", { path: "demo" });
+    for (let i = 0; i < STEPS.length; i++) {
+      setStep(i);
+      await sleep(350);
+    }
+    setStep(STEPS.length);
+    const data = await request;
     if (data) setResult(data);
     setLoading(false);
   }
@@ -106,10 +148,12 @@ export default function App() {
       <h2 className="text-lg font-semibold mt-10 mb-2">Scan a project</h2>
       <button
         onClick={runScan}
-        className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 transition"
+        disabled={loading}
+        className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 transition disabled:opacity-60"
       >
         {loading ? "Scanning..." : "Scan demo project"}
       </button>
+      {step >= 0 && <Steps step={step} />}
       <div className="mt-4 space-y-3">
         {result?.packages.map((p, i) => (
           <Card
