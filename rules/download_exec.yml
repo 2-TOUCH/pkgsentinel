@@ -1,0 +1,4 @@
+id: DOWNLOAD_EXEC
+severity: 90
+pattern: '(curl|wget)[^\n]*\|\s*(sh|bash)'
+explain: Downloads something and runs it immediately.

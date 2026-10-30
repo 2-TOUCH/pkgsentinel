@@ -1,0 +1,4 @@
+id: NET_CALL
+severity: 50
+pattern: '\bfetch\(|XMLHttpRequest|\baxios\b|https?\.(get|request)\(|\bcurl\b|\bwget\b|https?://'
+explain: Makes a network call during install.

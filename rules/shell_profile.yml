@@ -1,0 +1,4 @@
+id: SHELL_PROFILE
+severity: 70
+pattern: '\.bashrc|\.zshrc|\.profile'
+explain: Edits shell startup files, which can give an attacker lasting access.

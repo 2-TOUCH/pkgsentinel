@@ -2,3 +2,4 @@ rapidfuzz
 pytest
 typer
 rich
+pyyaml

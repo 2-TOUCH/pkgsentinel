@@ -1,0 +1,4 @@
+id: OBFUSCATION
+severity: 60
+pattern: '\beval\(|new Function\(|\batob\(|base64'
+explain: Uses hidden or encoded code, a common way to hide bad behaviour.

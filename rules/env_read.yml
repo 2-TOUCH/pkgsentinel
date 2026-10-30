@@ -1,0 +1,4 @@
+id: ENV_READ
+severity: 50
+pattern: 'process\.env|os\.environ|getenv\('
+explain: Reads environment variables, where secrets like API keys often live.
