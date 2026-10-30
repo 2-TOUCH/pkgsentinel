@@ -14,3 +14,13 @@ def test_exact_popular_names_stay_clean():
 
 def test_unrelated_name_stays_clean():
     assert check_name("my-cool-app")["score"] == 0
+
+def test_cut_off_name_is_warned():
+    result = check_name("expr")
+    assert result["score"] == 45
+    assert result["likely"].startswith("expr")
+
+
+def test_known_flag():
+    assert check_name("express")["known"] is True
+    assert check_name("my-cool-app")["known"] is False
