@@ -2,28 +2,10 @@ import json
 import re
 from pathlib import Path
 
-# Each rule: id, severity (0-100), regex to look for, plain-English explanation.
-# Later we will move these into YAML files so anyone can add a rule.
-RULES = [
-    {"id": "NET_CALL", "severity": 50,
-     "pattern": r"\bfetch\(|XMLHttpRequest|\baxios\b|https?\.(get|request)\(|\bcurl\b|\bwget\b|https?://",
-     "explain": "Makes a network call during install."},
-    {"id": "ENV_READ", "severity": 50,
-     "pattern": r"process\.env|os\.environ|getenv\(",
-     "explain": "Reads environment variables, where secrets like API keys often live."},
-    {"id": "SECRET_FILES", "severity": 80,
-     "pattern": r"\.ssh|id_rsa|\.npmrc|\.aws|credentials",
-     "explain": "Touches files that hold passwords, SSH keys or cloud credentials."},
-    {"id": "OBFUSCATION", "severity": 60,
-     "pattern": r"\beval\(|new Function\(|\batob\(|base64",
-     "explain": "Uses hidden or encoded code, a common way to hide bad behaviour."},
-    {"id": "DOWNLOAD_EXEC", "severity": 90,
-     "pattern": r"(curl|wget)[^\n]*\|\s*(sh|bash)",
-     "explain": "Downloads something and runs it immediately."},
-    {"id": "SHELL_PROFILE", "severity": 70,
-     "pattern": r"\.bashrc|\.zshrc|\.profile",
-     "explain": "Edits shell startup files, which can give an attacker lasting access."},
-]
+from core.rules import load_rules
+
+# The detection rules now live in the rules/ folder as small YAML files.
+RULES = load_rules()
 
 INSTALL_HOOKS = ("preinstall", "install", "postinstall")
 MAX_FILE_SIZE = 200_000  # bytes; we never read huge files
