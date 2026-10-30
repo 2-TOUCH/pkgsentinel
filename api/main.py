@@ -6,6 +6,7 @@ from pydantic import BaseModel
 
 from core.command import parse_command
 from core.name_risk import check_name
+from core.registry import enrich
 from core.rules import load_rules
 from core.scanner import scan_project
 from core.scoring import verdict
@@ -23,6 +24,7 @@ class ScanRequest(BaseModel):
 
 class CheckRequest(BaseModel):
     command: str
+    online: bool = False  # opt-in: ask npm if the name exists
 
 
 @app.get("/api/health")
@@ -54,9 +56,16 @@ def check(req: CheckRequest):
     packages = []
     for name in parse_command(req.command):
         r = check_name(name)
+        if req.online:
+            r = enrich(r, name)
         packages.append({
-            "name": name, "score": r["score"], "verdict": verdict(r["score"]),
-                     "likely": r["likely"], "reasons": r["reasons"], "known": r["known"],
+            "name": name,
+            "score": r["score"],
+            "verdict": verdict(r["score"]),
+            "likely": r["likely"],
+            "reasons": r["reasons"],
+            "known": r["known"],
+            "registry": r.get("registry"),
         })
     return {"command": req.command, "packages": packages}
 
