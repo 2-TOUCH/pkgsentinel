@@ -1,35 +1,29 @@
 # Credits
 
-PkgSentinel is built on open-source software. Thank you to everyone who makes and maintains these projects.
+PkgSentinel is built with the following open-source libraries and resources.
 
-## Python (backend and command line)
+## Python
+- RapidFuzz (MIT): fuzzy string distance for look-alike names
+- Typer (MIT) and Rich (MIT): command-line interface and coloured output
+- FastAPI (MIT), Uvicorn (BSD-3-Clause), httpx (BSD-3-Clause): REST API
+- PyYAML (MIT): detection rules as YAML files
+- pytest (MIT): tests
 
-| Library | Used for | Licence |
-|---------|----------|---------|
-| [RapidFuzz](https://github.com/rapidfuzz/RapidFuzz) | Measuring how close a package name is to a popular one | MIT |
-| [Typer](https://github.com/fastapi/typer) | The command line | MIT |
-| [Rich](https://github.com/Textualize/rich) | Coloured terminal output | MIT |
-| [FastAPI](https://github.com/fastapi/fastapi) | The web API | MIT |
-| [Uvicorn](https://github.com/encode/uvicorn) | Running the API | BSD-3-Clause |
-| [PyYAML](https://github.com/yaml/pyyaml) | Loading the YAML detection rules | MIT |
-| [pytest](https://github.com/pytest-dev/pytest) | Automated tests | MIT |
-| [HTTPX](https://github.com/encode/httpx) | Testing the API | BSD-3-Clause |
+## Web
+- React (MIT), Vite (MIT)
+- Tailwind CSS (MIT)
+- Framer Motion (MIT): animations
+- lucide-react (ISC): icons
+- Lenis (MIT): smooth scrolling
 
-## JavaScript (web dashboard)
+## Fonts
+- Michroma and IBM Plex Mono (Google Fonts, SIL Open Font License)
 
-| Library | Used for | Licence |
-|---------|----------|---------|
-| [React](https://github.com/facebook/react) | The user interface | MIT |
-| [Vite](https://github.com/vitejs/vite) | Dev server and build | MIT |
-| [Tailwind CSS](https://github.com/tailwindlabs/tailwindcss) | Styling | MIT |
-| [Framer Motion](https://github.com/motiondivision/motion) | Animations | MIT |
-| [lucide-react](https://github.com/lucide-icons/lucide) | Icons | ISC |
-| [Oxlint](https://github.com/oxc-project/oxc) | Code linting | MIT |
+## Design inspiration
+- Scroll-driven page structure inspired by the SELENE template prompt. All components were written by our team.
 
-## AI tools
+## Data
+- npm public registry API (optional online mode): package existence and weekly download counts.
 
-Claude (Anthropic) was used as a coding assistant while building this project.
-
-## Event
-
-Built for the Devf8rge x Hacktoberfest Hack Day finals by Team Exception Handlers.
+## AI tools used
+- Claude (Anthropic) was used as a coding assistant to help write and explain code during the finals.
