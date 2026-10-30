@@ -1,2 +1,4 @@
 rapidfuzz
 pytest
+typer
+rich
