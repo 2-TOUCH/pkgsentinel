@@ -6,3 +6,7 @@ body {
   color: #E6ECFF;
   font-family: system-ui, sans-serif;
 }
+pre {
+  scrollbar-width: thin;
+  scrollbar-color: #2f6bff #0a0f1f;
+}

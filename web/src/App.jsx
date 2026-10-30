@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, animate } from "framer-motion";
 import { Check, Loader2, X } from "lucide-react";
 
 const API = "http://127.0.0.1:8000";
@@ -74,6 +74,48 @@ function Steps({ step }) {
   );
 }
 
+function Gauge({ score, verdict }) {
+  const [shown, setShown] = useState(0);
+  useEffect(() => {
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const controls = animate(0, score, {
+      duration: reduce ? 0 : 1,
+      ease: "easeOut",
+      onUpdate: (v) => setShown(Math.round(v)),
+    });
+    return () => controls.stop();
+  }, [score]);
+
+  const R = 52;
+  const C = 2 * Math.PI * R;
+  const color = { BLOCK: "#EF4444", WARN: "#F59E0B", ALLOW: "#22C55E" }[verdict];
+
+  return (
+    <div className="relative mx-auto mt-6 h-36 w-36">
+      <svg viewBox="0 0 120 120" className="h-full w-full -rotate-90">
+        <circle cx="60" cy="60" r={R} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="10" />
+        <circle
+          cx="60"
+          cy="60"
+          r={R}
+          fill="none"
+          stroke={color}
+          strokeWidth="10"
+          strokeLinecap="round"
+          strokeDasharray={C}
+          strokeDashoffset={C * (1 - shown / 100)}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-4xl font-bold text-white">{shown}</span>
+        <span className="text-xs font-semibold tracking-widest" style={{ color }}>
+          {verdict}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 function Drawer({ pkg, onClose }) {
   const findings = [...pkg.script_risk.findings].sort(
     (a, b) => b.severity - a.severity
@@ -107,9 +149,7 @@ function Drawer({ pkg, onClose }) {
             <X size={20} />
           </button>
         </div>
-        <div className="mt-3">
-          <Badge verdict={pkg.verdict} score={pkg.score} />
-        </div>
+        <Gauge score={pkg.score} verdict={pkg.verdict} />
 
         <h4 className="mt-8 mb-2 text-sm font-semibold text-[#8DB0FF]">
           NAME CHECK
