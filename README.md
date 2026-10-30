@@ -23,12 +23,14 @@ Developers install code from strangers with one command. Attackers publish look-
 | WARN | 40 to 69 | Look at it before installing. |
 | ALLOW | below 40 | No strong warning signs. |
 
+Names that are not in our popular list get **UNVERIFIED** (grey) instead of a green ALLOW, because ALLOW only means no warning signs. In the optional online mode, a name that does not exist on npm shows **NOT ON NPM** (violet).
+
 ## What is built
 
 - **Name check:** look-alike characters (`rn` vs `m`, `1` vs `l`, `0` vs `o`), separator tricks, and 1 to 2 letter typos of popular package names, with the differing letters highlighted.
 - **Install script check:** reads `preinstall`, `install` and `postinstall` scripts, and the files they call, as **text only**. It looks for reading environment variables, touching secret files, network calls, hidden (obfuscated) code, download-and-run, and shell-profile edits. Reading secrets and sending data out together scores 95.
 - **Plain-English reasons:** every verdict shows the exact file, line and code that caused it.
-- **Three ways to use it:** a command line tool, an animated web dashboard, and a JSON API.
+- **Three ways to use it:** a command line tool, a scroll-driven web page with a live scanner (animated risk gauge, did-you-mean letter diff and an evidence drawer), and a JSON API.
 - **Detection rules as small YAML files** that anyone can add.
 
 ## Safety: static analysis only
@@ -74,7 +76,7 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:5173 and click **Scan demo project**. API docs are at http://127.0.0.1:8000/docs.
+Open http://localhost:5173, scroll to **Try it**, paste an install command such as `npm install expresss` or click **Scan demo project**. API docs are at http://127.0.0.1:8000/docs.
 
 **Run the tests**
 
@@ -115,7 +117,7 @@ api/        web API (FastAPI)
 rules/      detection rules, one YAML file per rule
 demo/       our own fake sandbox project
 tests/      automated tests
-web/        dashboard (React + Vite + Tailwind + Framer Motion)
+web/        landing page and dashboard (React + Vite + Tailwind + Framer Motion + Lenis)
 ```
 
 ## Contributing
