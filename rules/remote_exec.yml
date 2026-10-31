@@ -1,0 +1,4 @@
+id: REMOTE_EXEC
+severity: 85
+pattern: '(child_process\.(exec|execSync)|(?<![\w.$])(exec|execSync))\s*\(\s*(?!["''`])[\w$.[\]]+'
+explain: Runs downloaded or decoded text through child_process.exec, so a remote server decides what code your machine runs.
